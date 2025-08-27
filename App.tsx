@@ -15,6 +15,15 @@ const frases: Frase[] = [
   { id: 10, texto: "Difundir rumores o noticias falsas" }
 ];
 
+// Frases que sí o sí deben estar en ROJO
+const frasesRojas = [
+  "Compartir información personal con desconocidos",
+  "Hacer comentarios ofensivos en redes sociales",
+  "Excluir a alguien de un chat grupal",
+  "Compartir memes sin consentimiento",
+  "Difundir rumores o noticias falsas"
+];
+
 const colores = [
   { nombre: "", color: "red" },
   { nombre: "", color: "yellow" },
@@ -26,6 +35,7 @@ function App() {
   const [frasesDisponibles, setFrasesDisponibles] = useState<Frase[]>(frases);
   const [semaforo, setSemaforo] = useState<Frase[][]>([[], [], []]);
   const [fraseSeleccionada, setFraseSeleccionada] = useState<Frase | null>(null);
+  const [mensaje, setMensaje] = useState<string>("");
 
   const handleFraseClick = (frase: Frase) => {
     setFraseSeleccionada(frase);
@@ -33,9 +43,52 @@ function App() {
 
   const handleLuzSeleccionada = (colorIdx: number) => {
     if (!fraseSeleccionada) return;
+
+    // Validación: si es frase roja y NO la ponen en rojo
+    if (frasesRojas.includes(fraseSeleccionada.texto) && colorIdx !== 0) {
+      if (!window.confirm("⚠️ Esta frase debería ir en ROJO. ¿Estás seguro de tu elección?")) {
+        return;
+      }
+    }
+
     setFrasesDisponibles(frasesDisponibles.filter(f => f.id !== fraseSeleccionada.id));
     setSemaforo(semaforo.map((arr, idx) => idx === colorIdx ? [...arr, fraseSeleccionada] : arr));
     setFraseSeleccionada(null);
+  };
+
+  const verificarRespuestas = () => {
+    let feedback: string[] = [];
+
+    frases.forEach(frase => {
+      const enRojo = semaforo[0].some(f => f.texto === frase.texto);
+      const enAmarillo = semaforo[1].some(f => f.texto === frase.texto);
+      const enVerde = semaforo[2].some(f => f.texto === frase.texto);
+
+      if (frasesRojas.includes(frase.texto)) {
+        if (enRojo) {
+          feedback.push(`✅ "${frase.texto}" está en ROJO: correcto, es un riesgo.`);
+        } else {
+          feedback.push(`❌ "${frase.texto}" debería estar en ROJO porque implica un peligro.`);
+        }
+      } else {
+        if (enVerde) {
+          feedback.push(`✅ "${frase.texto}" está en VERDE: correcto, es positivo.`);
+        } else if (enAmarillo) {
+          feedback.push(`⚠️ "${frase.texto}" está en AMARILLO: correcto, requiere precaución.`);
+        } else {
+          feedback.push(`❌ "${frase.texto}" no fue ubicada.`);
+        }
+      }
+    });
+
+    setMensaje(feedback.join("\n\n"));
+  };
+
+  const reiniciarJuego = () => {
+    setFrasesDisponibles(frases);
+    setSemaforo([[], [], []]);
+    setFraseSeleccionada(null);
+    setMensaje("");
   };
 
   return (
@@ -93,9 +146,11 @@ function App() {
         }}>
           Semáforo de Convivencia Escolar y Redes Sociales
         </h2>
+
         <div style={{
           display: 'flex',
           justifyContent: 'center',
+          gap: 20,
           width: '100%',
           marginBottom: 20
         }}>
@@ -107,13 +162,24 @@ function App() {
             border: 'none',
             borderRadius: 8,
             boxShadow: '0 2px 8px #0002',
-            cursor: 'pointer',
-            margin: '0 auto',
-            display: 'block'
+            cursor: 'pointer'
           }}>
             Ver frases
           </button>
+          <button onClick={reiniciarJuego} style={{
+            padding: '10px 20px',
+            fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+            background: '#f44336',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 8,
+            boxShadow: '0 2px 8px #0002',
+            cursor: 'pointer'
+          }}>
+            Reiniciar
+          </button>
         </div>
+
         {/* Semáforo rectangular */}
         <div style={{
           background: '#222',
@@ -161,7 +227,6 @@ function App() {
                   fontSize: 'clamp(0.9rem, 2vw, 1rem)',
                   boxShadow: '0 1px 4px #0002',
                   border: '2px solid #888',
-                  cursor: 'default',
                   wordBreak: 'break-word',
                   maxWidth: '90%'
                 }}>
@@ -171,6 +236,35 @@ function App() {
             </div>
           ))}
         </div>
+
+        {/* Botón verificar */}
+        <button onClick={verificarRespuestas} style={{
+          padding: '10px 20px',
+          fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+          background: '#4caf50',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 8,
+          boxShadow: '0 2px 8px #0002',
+          cursor: 'pointer',
+          marginBottom: 20
+        }}>
+          Verificar respuestas
+        </button>
+
+        {/* Mensaje de verificación */}
+        {mensaje && (
+          <div style={{
+            background: '#2c2f4a',
+            padding: 15,
+            borderRadius: 8,
+            maxWidth: 500,
+            whiteSpace: 'pre-line',
+            textAlign: 'left'
+          }}>
+            {mensaje}
+          </div>
+        )}
       </div>
 
       {/* Modal de frases */}
